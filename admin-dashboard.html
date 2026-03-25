@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - HostelHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <aside class="sidebar"></aside>
+
+    <main class="main-wrapper">
+        <!-- Dashboard Content -->
+        <div class="row g-4 mb-5 fade-in" style="animation-delay: 0.1s;">
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-blue"><i class="bi bi-people-fill"></i></div>
+                    <div class="card-title">Total Students</div>
+                    <div class="card-value" id="total-students"><span id="studentCount">-</span></div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-green"><i class="bi bi-door-closed-fill"></i></div>
+                    <div class="card-title">Rooms Occupied</div>
+                    <div class="card-value" id="rooms-occupied">-</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-orange"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="card-title">Pending Complaints</div>
+                    <div class="card-value" id="pending-complaints">-</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-red"><i class="bi bi-cash-stack"></i></div>
+                    <div class="card-title">Fees Pending</div>
+                    <div class="card-value" id="fees-pending">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 fade-in" style="animation-delay: 0.2s;">
+            <!-- Recent Students Table -->
+            <div class="col-lg-8">
+                <div class="custom-table-card">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Recent Student Admissions</h5>
+                        <a href="admin-students.html" class="btn btn-sm btn-outline-primary rounded-pill px-3">Manage Students</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Room No</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-students-table">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-lg-4">
+                <div class="custom-table-card h-100">
+                    <div class="p-4 border-bottom">
+                        <h5 class="fw-bold mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="p-4">
+                        <div class="d-grid gap-3">
+                            <button class="btn btn-premium py-3" onclick="location.href='admin-notices.html'"><i class="bi bi-megaphone me-2"></i> Post New Notice</button>
+                            <button class="btn btn-secondary-premium py-3" onclick="location.href='admin-students.html'"><i class="bi bi-person-plus me-2"></i> Add Student</button>
+                            <button class="btn btn-outline-primary py-3" style="border-radius: var(--radius);" onclick="location.href='admin-menu.html'"><i class="bi bi-calendar3 me-2"></i> Update Menu</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/data.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tokenGuard = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!tokenGuard) { window.location.href = 'login.html'; return; }
+            const rawUser = localStorage.getItem('user');
+            const role = (localStorage.getItem('userRole') || '').toLowerCase();
+
+            console.log('Stored user (dashboard):', rawUser);
+            console.log('Stored role (dashboard):', role);
+
+            if (!role || role !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            let user = null;
+            try {
+                user = rawUser ? JSON.parse(rawUser) : null;
+            } catch (e) {
+                user = null;
+            }
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            renderSidebar('Dashboard', 'admin');
+            renderTopNav(user.name);
+
+            // Populate Stats
+            const students = getData('students');
+            const rooms = getData('rooms');
+            const complaints = getData('complaints');
+
+            // Dynamic student count from backend with local fallback
+            const studentCountEl = document.getElementById('studentCount');
+            fetch('http://localhost:5000/api/users/students/count')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success) {
+                        studentCountEl.textContent = data.count;
+                        console.log('[Admin] Student count loaded', data.count);
+                    } else {
+                        studentCountEl.textContent = students.length;
+                    }
+                })
+                .catch(() => {
+                    studentCountEl.textContent = students.length;
+                });
+
+            document.getElementById('rooms-occupied').textContent = rooms.filter(r => r.occupied > 0).length + '/' + rooms.length;
+            document.getElementById('pending-complaints').textContent = complaints.filter(c => c.status === 'Pending').length;
+            document.getElementById('fees-pending').textContent = students.filter(s => s.feesStatus === 'Pending').length;
+
+            // Load Recent Students
+            const recentStudents = students.slice(-5).reverse();
+            const tableBody = document.getElementById('recent-students-table');
+            
+            recentStudents.forEach(s => {
+                const statusBadge = s.feesStatus === 'Paid' ? 'badge-success' : 'badge-danger';
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>
+                            <div class="fw-bold">${s.name}</div>
+                            <div class="small text-muted">${s.email}</div>
+                        </td>
+                        <td>${s.roomNo}</td>
+                        <td><span class="badge badge-custom ${statusBadge}">${s.feesStatus}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-light border" onclick="location.href='admin-students.html'"><i class="bi bi-pencil-square"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>

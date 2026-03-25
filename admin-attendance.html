@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Attendance - HostelHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <aside class="sidebar"></aside>
+    <main class="main-wrapper">
+        <h2 class="fw-bold mb-4">Attendance Management</h2>
+
+        <div class="custom-table-card fade-in">
+            <div class="p-4 border-bottom">
+                <h5 class="fw-bold mb-0">Student Attendance Records</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Current %</th>
+                            <th>Status</th>
+                            <th>Update Attendance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-attendance-list">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/data.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'admin') { window.location.href = 'login.html'; return; }
+            renderSidebar('Attendance', 'admin');
+            renderTopNav(user.name);
+            
+            loadAdminAttendance();
+        });
+
+        function loadAdminAttendance() {
+            const students = getData('students');
+            const list = document.getElementById('admin-attendance-list');
+            
+            list.innerHTML = students.map(s => {
+                const statusBadge = s.attendance >= 75 ? 'badge-success' : 'badge-danger';
+                return `
+                    <tr>
+                        <td>
+                            <div class="fw-bold">${s.name}</div>
+                            <div class="small text-muted">${s.course}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold">${s.attendance}%</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-custom ${statusBadge}">
+                                ${s.attendance >= 75 ? 'Eligible' : 'Shortage'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width: 200px;">
+                                <input type="number" class="form-control" id="att-${s.id}" value="${s.attendance}" min="0" max="100">
+                                <button class="btn btn-primary" onclick="updateAttendance(${s.id})">Save</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateAttendance(id) {
+            const newVal = document.getElementById(`att-${id}`).value;
+            const students = getData('students');
+            const index = students.findIndex(s => s.id == id);
+            
+            if (index !== -1) {
+                const val = parseInt(newVal);
+                if (val < 0 || val > 100 || isNaN(val)) {
+                    alert('Please enter a valid percentage between 0 and 100');
+                    return;
+                }
+                students[index].attendance = val;
+                saveData('students', students);
+                loadAdminAttendance();
+            }
+        }
+    </script>
+</body>
+</html>

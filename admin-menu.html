@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Menu - HostelHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <aside class="sidebar"></aside>
+    <main class="main-wrapper">
+        <h2 class="fw-bold mb-4">Manage Hostel Menu</h2>
+
+        <div class="custom-table-card fade-in">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Breakfast</th>
+                            <th>Lunch</th>
+                            <th>Snacks</th>
+                            <th>Dinner</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-menu-list">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Edit Menu Modal -->
+        <div class="modal fade" id="menuModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow" style="border-radius: var(--radius);">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="fw-bold">Update Menu - <span id="modal-day-name"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="menuForm">
+                        <input type="hidden" id="edit-day">
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label">Breakfast</label>
+                                <input type="text" class="form-control" id="m-breakfast" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Lunch</label>
+                                <input type="text" class="form-control" id="m-lunch" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Snacks</label>
+                                <input type="text" class="form-control" id="m-snacks" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Dinner</label>
+                                <input type="text" class="form-control" id="m-dinner" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-premium px-4">Update Menu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getCurrentUser();
+            if (!user || user.role !== 'admin') { window.location.href = 'login.html'; return; }
+            renderSidebar('Menu', 'admin');
+            renderTopNav(user.name);
+            loadAdminMenu();
+
+            document.getElementById('menuForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                updateMenu();
+            });
+        });
+
+        function loadAdminMenu() {
+            const menu = getData('menu');
+            const list = document.getElementById('admin-menu-list');
+            
+            list.innerHTML = menu.map(m => `
+                <tr>
+                    <td><span class="fw-bold">${m.day}</span></td>
+                    <td>${m.breakfast}</td>
+                    <td>${m.lunch}</td>
+                    <td>${m.snacks}</td>
+                    <td>${m.dinner}</td>
+                    <td>
+                        <button class="btn btn-sm btn-light border" onclick="openMenuModal('${m.day}')"><i class="bi bi-pencil"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openMenuModal(day) {
+            const menu = getData('menu');
+            const m = menu.find(x => x.day === day);
+            if (!m) return;
+
+            document.getElementById('modal-day-name').textContent = day;
+            document.getElementById('edit-day').value = day;
+            document.getElementById('m-breakfast').value = m.breakfast;
+            document.getElementById('m-lunch').value = m.lunch;
+            document.getElementById('m-snacks').value = m.snacks;
+            document.getElementById('m-dinner').value = m.dinner;
+
+            new bootstrap.Modal(document.getElementById('menuModal')).show();
+        }
+
+        function updateMenu() {
+            const menu = getData('menu');
+            const day = document.getElementById('edit-day').value;
+            const index = menu.findIndex(m => m.day === day);
+            
+            if (index !== -1) {
+                menu[index] = {
+                    day: day,
+                    breakfast: document.getElementById('m-breakfast').value,
+                    lunch: document.getElementById('m-lunch').value,
+                    snacks: document.getElementById('m-snacks').value,
+                    dinner: document.getElementById('m-dinner').value
+                };
+                saveData('menu', menu);
+                bootstrap.Modal.getInstance(document.getElementById('menuModal')).hide();
+                loadAdminMenu();
+            }
+        }
+    </script>
+</body>
+</html>

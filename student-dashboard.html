@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - HostelHub</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <aside class="sidebar"></aside>
+
+    <main class="main-wrapper">
+        <!-- Dashboard Content -->
+        <div id="dashboard-stats" class="row g-4 mb-5 fade-in" style="animation-delay: 0.1s;">
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-blue"><i class="bi bi-door-open"></i></div>
+                    <div class="card-title">My Room</div>
+                    <div class="card-value" id="user-room">-</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-green"><i class="bi bi-cash-stack"></i></div>
+                    <div class="card-title">Fee Status</div>
+                    <div class="card-value" id="user-fees" style="font-size: 1.25rem;">-</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-orange"><i class="bi bi-calendar-check"></i></div>
+                    <div class="card-title">Attendance</div>
+                    <div class="card-value" id="user-attendance">-</div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon icon-red"><i class="bi bi-chat-left-dots"></i></div>
+                    <div class="card-title">Complaints</div>
+                    <div class="card-value" id="user-complaints">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 fade-in" style="animation-delay: 0.2s;">
+            <!-- Notice Board Summary -->
+            <div class="col-lg-7">
+                <div class="custom-table-card h-100">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Recent Notices</h5>
+                        <a href="student-notices.html" class="btn btn-sm btn-outline-primary rounded-pill px-3">View All</a>
+                    </div>
+                    <div class="p-4" id="recent-notices">
+                        <!-- Notices will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Menu -->
+            <div class="col-lg-5">
+                <div class="custom-table-card h-100">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Today's Menu</h5>
+                        <a href="student-menu.html" class="btn btn-sm btn-outline-primary rounded-pill px-3">Weekly Menu</a>
+                    </div>
+                    <div class="p-4" id="today-menu">
+                        <!-- Menu will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/data.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tokenGuard = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!tokenGuard) { window.location.href = 'login.html'; return; }
+            const rawUser = localStorage.getItem('user');
+            const role = (localStorage.getItem('userRole') || '').toLowerCase();
+
+            console.log('Stored user (dashboard):', rawUser);
+            console.log('Stored role (dashboard):', role);
+
+            if (!role || role !== 'student') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            let user = null;
+            try {
+                user = rawUser ? JSON.parse(rawUser) : null;
+            } catch (e) {
+                user = null;
+            }
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            renderSidebar('Dashboard', 'student');
+            renderTopNav(user.name);
+
+            // Populate Stats from local demo data
+            document.getElementById('user-room').textContent = user.roomNo;
+            document.getElementById('user-fees').textContent = user.feesStatus;
+            document.getElementById('user-fees').className = `card-value ${user.feesStatus === 'Paid' ? 'text-success' : 'text-danger'}`;
+            document.getElementById('user-attendance').textContent = user.attendance + '%';
+            
+            const complaints = getData('complaints').filter(c => c.studentName === user.name);
+            document.getElementById('user-complaints').textContent = complaints.length;
+
+            // Load Recent Notices
+            const notices = getData('notices').slice(0, 3);
+            const noticeContainer = document.getElementById('recent-notices');
+            if (notices.length === 0) {
+                noticeContainer.innerHTML = '<p class="text-muted text-center py-4">No recent notices.</p>';
+            } else {
+                notices.forEach(notice => {
+                    const badgeClass = notice.priority === 'urgent' ? 'badge-danger' : 'badge-info';
+                    noticeContainer.innerHTML += `
+                        <div class="mb-3 pb-3 border-bottom last-border-0">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge badge-custom ${badgeClass}">${notice.priority.toUpperCase()}</span>
+                                <small class="text-muted">${notice.date}</small>
+                            </div>
+                            <h6 class="fw-bold mb-1">${notice.title}</h6>
+                            <p class="text-muted small mb-0 text-truncate">${notice.message}</p>
+                        </div>
+                    `;
+                });
+            }
+
+            // Load Today's Menu
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const today = days[new Date().getDay()];
+            const menu = getData('menu').find(m => m.day === today);
+            const menuContainer = document.getElementById('today-menu');
+
+            if (menu) {
+                menuContainer.innerHTML = `
+                    <div class="menu-item">
+                        <span class="menu-time"><i class="bi bi-brightness-alt-high me-2"></i>Breakfast</span>
+                        <span class="menu-food">${menu.breakfast}</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-time"><i class="bi bi-brightness-high me-2"></i>Lunch</span>
+                        <span class="menu-food">${menu.lunch}</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-time"><i class="bi bi-cup-hot me-2"></i>Snacks</span>
+                        <span class="menu-food">${menu.snacks}</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-time"><i class="bi bi-moon-stars me-2"></i>Dinner</span>
+                        <span class="menu-food">${menu.dinner}</span>
+                    </div>
+                `;
+            } else {
+                menuContainer.innerHTML = '<p class="text-muted text-center py-4">Menu not available for today.</p>';
+            }
+
+            // Optional: fetch hostels and bookings from backend for integration.
+            const token = localStorage.getItem('authToken');
+            const userId = localStorage.getItem('authUserId');
+
+            if (typeof apiGetHostels === 'function') {
+                apiGetHostels()
+                    .then(hostels => {
+                        console.log('Hostels from backend API:', hostels);
+                    })
+                    .catch(err => {
+                        console.warn('Failed to load hostels from API:', err.message);
+                    });
+            }
+
+            if (token && userId && typeof apiGetBookings === 'function') {
+                apiGetBookings(token, userId)
+                    .then(bookings => {
+                        console.log('Bookings from backend API:', bookings);
+                    })
+                    .catch(err => {
+                        console.warn('Failed to load bookings from API:', err.message);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
