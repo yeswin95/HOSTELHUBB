@@ -2,6 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('signupForm');
   if (!form) return;
 
+  const getApiBaseUrl = () => {
+    if (window.location.protocol === 'file:' || window.location.origin === 'null') {
+      return 'http://localhost:5000';
+    }
+    return window.location.origin;
+  };
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -31,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = { name, email, phone, password, role };
       console.log('[Signup] Submitting signup request', payload);
 
-      const response = await fetch('http://localhost:5000/api/auth/signup', {
+      const response = await fetch(`${getApiBaseUrl()}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
