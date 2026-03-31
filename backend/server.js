@@ -22,7 +22,6 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
-app.options('/*', cors(corsOptions));
 
 // Parse incoming JSON request bodies.
 app.use(express.json());
