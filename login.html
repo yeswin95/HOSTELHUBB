@@ -1,141 +1,78 @@
-// Entry point for the HostelHub backend API server.
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const FoodMenu = require('./models/FoodMenu');
-const Notice = require('./models/Notice');
-const Hostel = require('./models/Hostel');
-const Room = require('./models/Room');
+DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - HostelHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-light bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand fw-bold fs-3 text-primary" href="index.html">
+        <i class="bi bi-building"></i> HostelHub
+      </a>
+    </div>
+  </nav>
 
-// Load environment variables from .env file.
-dotenv.config();
+  <div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card shadow-sm p-4" style="max-width: 420px; width: 100%; border-radius: 1rem;">
+      <h2 class="fw-bold mb-3 text-center">Welcome back</h2>
+      <p class="text-muted text-center mb-4">Log in to access your dashboard.</p>
 
-// Connect to MongoDB Atlas.
-connectDB();
+      <form id="loginForm" novalidate>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email address</label>
+          <input type="email" id="email" class="form-control" placeholder="you@example.com" required />
+        </div>
 
-const app = express();
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="Enter your password" required />
+        </div>
 
-// Enable CORS for the deployed frontend origin(s).
-const frontendOrigins = process.env.FRONTEND_URLS
-  ? process.env.FRONTEND_URLS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : process.env.FRONTEND_URL
-    ? [process.env.FRONTEND_URL.trim()]
-    : [];
+        <div class="mb-3">
+          <label for="role" class="form-label">Role</label>
+          <select id="role" class="form-select" required>
+            <option value="" selected disabled>Select role</option>
+            <option value="student">Student</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (frontendOrigins.length === 0 || frontendOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error(`Origin ${origin} is not allowed by CORS`));
-  },
-  credentials: true,
-};
-app.use(cors(corsOptions));
+        <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
 
-// Parse incoming JSON request bodies.
-app.use(express.json());
+        <p class="text-center text-muted mb-0">
+          Don’t have an account?
+          <a href="signup.html">Sign up</a>
+        </p>
+      </form>
+    </div>
+  </div>
 
-// Basic health check route.
-app.get('/', (req, res) => {
-  res.json({ message: 'HostelHub backend is running' });
-});
+  <!-- Invalid Credentials Popup (Bootstrap Modal) -->
+  <div class="modal fade" id="invalidCredentialsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Invalid Credentials</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          The email or password you entered is incorrect. Please try again.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-// Route modules.
-const authRoutes = require('./routes/authRoutes');
-const hostelRoutes = require('./routes/hostelRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const userRoutes = require('./routes/userRoutes');
-const complaintRoutes = require('./routes/complaintRoutes');
-const feeRoutes = require('./routes/feeRoutes');
-const foodMenuRoutes = require('./routes/foodMenuRoutes');
-const noticeRoutes = require('./routes/noticeRoutes');
-const roomRoutes = require('./routes/roomRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const maintenanceRoutes = require('./routes/maintenanceRoutes');
-const attendanceRoutes = require('./routes/attendanceRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const studentRoutes = require('./routes/studentRoutes');
-
-// Mount API routes.
-// Auth endpoints: /api/auth/signup, /api/auth/login
-app.use('/api/auth', authRoutes);
-
-// Other domain endpoints
-app.use('/api/hostels', hostelRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/complaints', complaintRoutes);
-app.use('/api/fees', feeRoutes);
-app.use('/api/foodmenu', foodMenuRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/maintenance', maintenanceRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/student', studentRoutes);
-
-const seedDefaultData = async () => {
-  try {
-    const menuCount = await FoodMenu.countDocuments();
-    if (menuCount === 0) {
-      await FoodMenu.create({
-        day: 'Monday',
-        breakfast: 'Bread & Jam',
-        lunch: 'Rice, Dal',
-        snacks: 'Samosa',
-        dinner: 'Roti, Curry',
-      });
-    }
-    const noticeCount = await Notice.countDocuments();
-    if (noticeCount === 0) {
-      await Notice.create({
-        title: 'Welcome',
-        content: 'HostelHub is now live.',
-      });
-    }
-    const hostelCount = await Hostel.countDocuments();
-    let hostelId;
-    if (hostelCount === 0) {
-      const hostel = await Hostel.create({
-        name: 'Hostel A',
-        location: 'Campus',
-        price: 2500,
-      });
-      hostelId = hostel._id;
-    } else {
-      const anyHostel = await Hostel.findOne();
-      hostelId = anyHostel?._id;
-    }
-    const roomCount = await Room.countDocuments({ hostelId });
-    if (hostelId && roomCount === 0) {
-      await Room.create({
-        hostelId,
-        roomNumber: '101',
-        capacity: 3,
-        occupied: 0,
-      });
-    }
-  } catch (e) {
-    console.error('Seeding error:', e.message);
-  }
-};
-
-seedDefaultData();
-
-// Global error handler fallback.
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ message: 'Unexpected server error' });
-});
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`HostelHub backend server running on port ${PORT}`);
-});
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="frontend/js/api.js"></script>
+  <script src="frontend/js/login.js"></script>
+</body>
+</html>
 
