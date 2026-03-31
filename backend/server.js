@@ -16,9 +16,21 @@ connectDB();
 
 const app = express();
 
-// Enable CORS so the frontend can access backend APIs from any origin.
+// Enable CORS for the deployed frontend origin(s).
+const frontendOrigins = process.env.FRONTEND_URLS
+  ? process.env.FRONTEND_URLS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : process.env.FRONTEND_URL
+    ? [process.env.FRONTEND_URL.trim()]
+    : [];
+
 const corsOptions = {
-  origin: (origin, callback) => callback(null, true),
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (frontendOrigins.length === 0 || frontendOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true,
 };
 app.use(cors(corsOptions));
