@@ -16,8 +16,13 @@ connectDB();
 
 const app = express();
 
-// Enable CORS so the frontend can access backend APIs.
-app.use(cors());
+// Enable CORS so the frontend can access backend APIs from any origin.
+const corsOptions = {
+  origin: (origin, callback) => callback(null, true),
+  credentials: true,
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Parse incoming JSON request bodies.
 app.use(express.json());
