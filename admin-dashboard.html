@@ -132,7 +132,7 @@
 
             // Dynamic student count from backend with local fallback
             const studentCountEl = document.getElementById('studentCount');
-            fetch('http://localhost:5000/api/users/students/count')
+            fetch((window.API_BASE_URL || 'https://hostelhubb-wfhb.onrender.com') + '/api/users/students/count')
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.success) {
