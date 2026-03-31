@@ -1,7 +1,9 @@
 // Simple API helper functions for calling the HostelHub backend.
-// Update API_BASE_URL if your backend runs on a different host/port.
-
-const API_BASE_URL = 'https://hostelhubb-wfhb.onrender.com';
+// Resolve API base URL from a global runtime variable, build-time env var, or default.
+const API_BASE_URL =
+  window.API_BASE_URL ||
+  (typeof process !== 'undefined' && process.env && (process.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL)) ||
+  'https://hostelhubb-wfhb.onrender.com';
 
 async function apiRequest(path, options = {}) {
   const url = `${API_BASE_URL}${path}`;
@@ -11,6 +13,7 @@ async function apiRequest(path, options = {}) {
   };
 
   const mergedOptions = {
+    credentials: 'include',
     ...options,
     headers: {
       ...defaultHeaders,
