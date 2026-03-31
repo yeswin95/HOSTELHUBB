@@ -16,19 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       console.log('[Login] Submitting login request', { email, role });
-
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok || !data.success) {
-        console.error('[Login] Login failed', { status: response.status, data });
-        throw new Error(data.message || 'Invalid email or password');
-      }
+      const data = await apiLogin(email, password, role);
 
       console.log('[Login] Login successful', data);
 
